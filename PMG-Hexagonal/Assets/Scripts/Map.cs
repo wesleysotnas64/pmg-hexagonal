@@ -4,12 +4,16 @@ public class Map : MonoBehaviour
 {
     [SerializeField] private int width;
     [SerializeField] private int height;
-    [SerializeField] private float gap = 0.1f; // Espaçamento adicional entre os tiles
+    [SerializeField] private float gap;
     
     private Tile[,] tiles;
     public GameObject tilePrefab;
 
-    void Start()
+    public Tile[,] Tiles => tiles;
+    public int Width => width;
+    public int Height => height;
+
+    void Awake()
     {
         Initialize();
     }
@@ -39,6 +43,7 @@ public class Map : MonoBehaviour
         float offsetX = totalWidth / 2f;
         float offsetY = totalHeight / 2f;
 
+        // 1. Instancia e posiciona todos os tiles no grid
         for (int i = 0; i < height; i++)
         {
             for (int j = 0; j < width; j++)
@@ -66,24 +71,108 @@ public class Map : MonoBehaviour
             }
         }
 
+        // 2. Conecta os vizinhos de cada tile na grade
+        LinkAllNeighbors();
+
         // Passamos effectiveWidth e effectiveHeight para incluir o gap no padding da câmera
-        FitCameraToMap(totalWidth, totalHeight, effectiveWidth, effectiveHeight);
+        GameObject cameraController = GameObject.Find("Main Camera");
+        if (cameraController != null && cameraController.TryGetComponent<CameraController>(out var camScript))
+        {
+            camScript.FitCameraToMap(totalWidth, totalHeight, effectiveWidth, effectiveHeight);
+        }
     }
 
-    private void FitCameraToMap(float totalWidth, float totalHeight, float spriteWidth, float spriteHeight)
+    /// <summary>
+    /// Popula o array neighbors[6] de cada Tile com base nas coordenadas flat-topped (Odd-Q).
+    /// </summary>
+    private void LinkAllNeighbors()
     {
-        Camera mainCamera = Camera.main;
-        if (mainCamera == null || !mainCamera.orthographic) return;
+        for (int c = 0; c < width; c++)
+        {
+            for (int l = 0; l < height; l++)
+            {
+                Tile current = tiles[c, l];
+                if (current == null) continue;
 
-        mainCamera.transform.position = new Vector3(0f, 0f, -10f);
+                bool isOddColumn = (c % 2 != 0);
 
-        float mapWidthWithPadding = totalWidth + spriteWidth;
-        float mapHeightWithPadding = totalHeight + spriteHeight;
+                // Deslocamentos (deltaColumn, deltaLine) para cada direção:
+                // 0: UpLeft, 1: Up, 2: UpRight, 3: BottomRight, 4: Bottom, 5: BottomLeft
+                int[,] evenOffsetDirections = new int[,]
+                {
+                    { -1,  0 }, // 0: UpLeft
+                    {  0,  1 }, // 1: Up
+                    {  1,  0 }, // 2: UpRight
+                    {  1, -1 }, // 3: BottomRight
+                    {  0, -1 }, // 4: Bottom
+                    { -1, -1 }  // 5: BottomLeft
+                };
 
-        float sizeBasedOnHeight = mapHeightWithPadding / 2f;
-        float screenAspect = (float)Screen.width / Screen.height;
-        float sizeBasedOnWidth = (mapWidthWithPadding / 2f) / screenAspect;
+                // Colunas Ímpares (c % 2 != 0)
+                int[,] oddOffsetDirections = new int[,]
+                {
+                    { -1,  1 }, // 0: UpLeft
+                    {  0,  1 }, // 1: Up
+                    {  1,  1 }, // 2: UpRight
+                    {  1,  0 }, // 3: BottomRight
+                    {  0, -1 }, // 4: Bottom
+                    { -1,  0 }  // 5: BottomLeft
+                };
 
-        mainCamera.orthographicSize = Mathf.Max(sizeBasedOnHeight, sizeBasedOnWidth);
+                for (int dir = 0; dir < 6; dir++)
+                {
+                    // Seleciona a matriz de offsets com base na paridade da coluna c (Even vs Odd)
+                    int neighborCol = c + (isOddColumn ? oddOffsetDirections[dir, 0] : evenOffsetDirections[dir, 0]);
+                    int neighborRow = l + (isOddColumn ? oddOffsetDirections[dir, 1] : evenOffsetDirections[dir, 1]);
+
+                    if (IsWithinBounds(neighborCol, neighborRow))
+                    {
+                        current.neighbors[dir] = tiles[neighborCol, neighborRow];
+                    }
+                    else
+                    {
+                        current.neighbors[dir] = null;
+                    }
+                }
+            }
+        }
+    }
+
+    public bool IsWithinBounds(int col, int line)
+    {
+        return col >= 0 && col < width && line >= 0 && line < height;
+    }
+
+    public Tile GetTile(int col, int line)
+    {
+        if (IsWithinBounds(col, line))
+        {
+            return tiles[col, line];
+        }
+        return null;
+    }
+
+    public void ResetMap()
+    {
+        // Destrói os GameObjects de tiles que foram instanciados
+        if (tiles != null)
+        {
+            for (int c = 0; c < width; c++)
+            {
+                for (int l = 0; l < height; l++)
+                {
+                    if (tiles[c, l] != null)
+                    {
+                        Destroy(tiles[c, l].gameObject);
+                    }
+                }
+            }
+        }
+
+        // Limpa a referência da matriz
+        tiles = null;
+
+        // Reinicia e recria a grade
+        Initialize();
     }
 }

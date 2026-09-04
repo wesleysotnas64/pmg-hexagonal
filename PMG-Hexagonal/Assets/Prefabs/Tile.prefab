@@ -54,13 +54,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Tile
   line: 0
   column: 0
-  paths:
-  - {fileID: 4685647889488686224}
-  - {fileID: 7538071700984386284}
-  - {fileID: 4390806462140724143}
-  - {fileID: 6885960021331213032}
-  - {fileID: 5258599446882034750}
-  - {fileID: 5622403083111640724}
+  isVisible: 0
+  isVisited: 0
+  isBorder: 0
+  currentEnergy: 0
   neighbors:
   - {fileID: 0}
   - {fileID: 0}
@@ -69,6 +66,13 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   isPathOpen: 000000000000
+  paths:
+  - {fileID: 4685647889488686224}
+  - {fileID: 7538071700984386284}
+  - {fileID: 4390806462140724143}
+  - {fileID: 6885960021331213032}
+  - {fileID: 5258599446882034750}
+  - {fileID: 5622403083111640724}
 --- !u!212 &6507702514894556453
 SpriteRenderer:
   serializedVersion: 2
@@ -139,7 +143,7 @@ GameObject:
   - component: {fileID: 2802420488942562763}
   - component: {fileID: 8944865040796234044}
   m_Layer: 0
-  m_Name: UpRight
+  m_Name: TopRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -230,7 +234,7 @@ GameObject:
   - component: {fileID: 1945607168379415179}
   - component: {fileID: 4097089427220565511}
   m_Layer: 0
-  m_Name: UpLeft
+  m_Name: TopLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -594,7 +598,7 @@ GameObject:
   - component: {fileID: 7704823979793362554}
   - component: {fileID: 8650414464941965760}
   m_Layer: 0
-  m_Name: Up
+  m_Name: Top
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
