@@ -3,6 +3,8 @@ using UnityEngine.InputSystem;
 
 public class DynamicEnergyPropagation : MonoBehaviour
 {
+    public static DynamicEnergyPropagation Instance { get; private set; }
+
     [Header("Configurações do Algoritmo")]
     [SerializeField] private int initialEnergy = 5;
     [SerializeField] private float closeGrid = 0.5f;
@@ -15,9 +17,19 @@ public class DynamicEnergyPropagation : MonoBehaviour
         set => initialEnergy = value; 
     }
 
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+    }
+
     private void Start()
     {
-        // Localiza a instância do Map na cena
         GameObject mapObj = GameObject.Find("Map");
         if (mapObj != null)
         {
@@ -30,18 +42,15 @@ public class DynamicEnergyPropagation : MonoBehaviour
             return;
         }
 
-        // Calcula o tile central para o teste inicial
         int centerCol = map.Width / 2;
         int centerLine = map.Height / 2;
 
-        // Executa o algoritmo a partir do centro
         Generate(map, centerCol, centerLine);
     }
 
     private void Update()
     {
-        // Verifica se a tecla 'R' foi pressionada
-        if (Keyboard.current.rKey.wasPressedThisFrame)
+        if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
         {
             RestartGeneration();
         }
@@ -49,61 +58,70 @@ public class DynamicEnergyPropagation : MonoBehaviour
 
     public void Generate(Map map, int startCol, int startLine)
     {
-        if (map == null)
-        {
-            Debug.LogError("DynamicEnergyPropagation: O parâmetro 'map' está nulo!");
-            return;
-        }
+        if (map == null) return;
 
         Tile startTile = map.GetTile(startCol, startLine);
-        if (startTile == null)
-        {
-            Debug.LogError($"DynamicEnergyPropagation: Posição inicial ({startCol}, {startLine}) fora dos limites do mapa!");
-            return;
-        }
+        if (startTile == null) return;
 
-        // Inicia a propagação utilizando a energia configurada
         PropagateEnergy(startTile, initialEnergy);
-
-        // Atualiza quais tiles passam a ser bordas após essa expansão
         UpdateAllBorders(map);
     }
 
-    /// <summary>
-    /// Função recursiva de propagação de energia sob demanda.
-    /// </summary>
+    public void ExpandFromBorderTile(Tile borderTile)
+    {
+        if (map == null || borderTile == null || !borderTile.isBorder) return;
+
+        // Dispara a propagação a partir dos vizinhos invisíveis do tile de borda clicado
+        for (int dir = 0; dir < 6; dir++)
+        {
+            Tile neighbor = borderTile.neighbors[dir];
+
+            // Se o vizinho existe e ainda não está visível na cena
+            if (neighbor != null && !neighbor.isVisible)
+            {
+                int returnedEnergy = PropagateEnergy(neighbor, initialEnergy - 1);
+
+                // Se a propagação gerou um caminho válido, conecta o tile de borda ao novo vizinho
+                if (returnedEnergy > 0 && neighbor.isVisible)
+                {
+                    borderTile.OpenPath(dir);
+
+                    int oppositeDir = (dir + 3) % 6;
+                    neighbor.OpenPath(oppositeDir);
+                }
+            }
+        }
+
+        // Recalcula o estado de borda em todo o mapa após a expansão
+        UpdateAllBorders(map);
+    }
+
     private int PropagateEnergy(Tile tile, int energy)
     {
-        // 1. Verificações de parada: Tile inexistente ou energia esgotada
         if (tile == null || energy <= 0)
         {
             return 0;
         }
 
-        // 2. Teste de fechamento de grade (CLOSE_GRID) para evitar ciclos indesejados
         if (tile.isVisited && Random.value < closeGrid)
         {
             return 0;
         }
 
-        // 3. Revela o tile e marca como visitado
         tile.isVisited = true;
         tile.SetVisibility(true);
 
         int currentLocalEnergy = energy;
         int[] neighborEnergies = new int[6];
 
-        // 4. Propagação para as 6 direções hexagonais
         for (int dir = 0; dir < 6; dir++)
         {
             Tile neighbor = tile.neighbors[dir];
 
             if (neighbor == null) continue;
 
-            // Tenta propagar
             neighborEnergies[dir] = PropagateEnergy(neighbor, energy - 1);
 
-            // Conecta SOMENTE se o vizinho processou energia E se ele realmente ficou visível
             if (neighborEnergies[dir] > 0 && neighbor.isVisible)
             {
                 tile.OpenPath(dir);
@@ -113,7 +131,6 @@ public class DynamicEnergyPropagation : MonoBehaviour
             }
         }
 
-        // 5. Determina o nível máximo de energia retornado pelos vizinhos
         int maxNeighborEnergy = 0;
         for (int i = 0; i < 6; i++)
         {
@@ -128,9 +145,6 @@ public class DynamicEnergyPropagation : MonoBehaviour
         return tile.currentEnergy;
     }
 
-    /// <summary>
-    /// Atualiza o estado isBorder em todos os tiles do mapa.
-    /// </summary>
     private void UpdateAllBorders(Map map)
     {
         for (int c = 0; c < map.Width; c++)
@@ -150,10 +164,8 @@ public class DynamicEnergyPropagation : MonoBehaviour
     {
         if (map == null) return;
 
-        // Reseta o mapa e recria os tiles limpos
         map.ResetMap();
 
-        // Recompula o centro e gera novamente
         int centerCol = map.Width / 2;
         int centerLine = map.Height / 2;
 

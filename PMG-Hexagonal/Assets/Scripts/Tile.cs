@@ -1,6 +1,7 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
-public class Tile : MonoBehaviour
+public class Tile : MonoBehaviour, IPointerClickHandler
 {
     [Header("Coordenadas")]
     public int line;
@@ -87,6 +88,14 @@ public class Tile : MonoBehaviour
             {
                 spriteRenderer.color = color;
             }
+        }
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (isBorder && DynamicEnergyPropagation.Instance != null)
+        {
+            DynamicEnergyPropagation.Instance.ExpandFromBorderTile(this);
         }
     }
 }
