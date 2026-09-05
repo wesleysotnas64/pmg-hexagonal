@@ -75,6 +75,8 @@ MonoBehaviour:
   - {fileID: 6885960021331213032}
   - {fileID: 5258599446882034750}
   - {fileID: 5622403083111640724}
+  - {fileID: 8121684168622577585}
+  biomeType: 0
 --- !u!212 &6507702514894556453
 SpriteRenderer:
   serializedVersion: 2

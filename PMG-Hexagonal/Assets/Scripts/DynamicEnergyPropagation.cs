@@ -10,6 +10,7 @@ public class DynamicEnergyPropagation : MonoBehaviour
     [SerializeField] private float closeGrid = 0.5f;
 
     private Map map;
+    private BiomeType nextBiomeType = BiomeType.None;
 
     public int InitialEnergy 
     { 
@@ -63,6 +64,8 @@ public class DynamicEnergyPropagation : MonoBehaviour
         Tile startTile = map.GetTile(startCol, startLine);
         if (startTile == null) return;
 
+        nextBiomeType = BiomeManager.Instance.GetRandomBiome();
+
         PropagateEnergy(startTile, initialEnergy);
         UpdateAllBorders(map);
     }
@@ -70,6 +73,8 @@ public class DynamicEnergyPropagation : MonoBehaviour
     public void ExpandFromBorderTile(Tile borderTile)
     {
         if (map == null || borderTile == null || !borderTile.isBorder) return;
+
+        nextBiomeType = BiomeManager.Instance.GetRandomBiome();
 
         // Dispara a propagação a partir dos vizinhos invisíveis do tile de borda clicado
         for (int dir = 0; dir < 6; dir++)
@@ -110,6 +115,7 @@ public class DynamicEnergyPropagation : MonoBehaviour
 
         tile.isVisited = true;
         tile.SetVisibility(true);
+        tile.SetBiome(nextBiomeType);
 
         int currentLocalEnergy = energy;
         int[] neighborEnergies = new int[6];
