@@ -43,6 +43,16 @@ public class BiomeManager : MonoBehaviour
         {
             biomeWeights[biome] = 1;
         }
+
+        LogBiomeWeights();
+    }
+
+    public void LogBiomeWeights()
+    {
+        foreach (var biomeWeight in biomeWeights)
+        {
+            Debug.Log($"Biome: {biomeWeight.Key}, Weight: {biomeWeight.Value}");
+        }
     }
 
     public void RegisterBiomeInteraction(BiomeType biome)
@@ -51,6 +61,8 @@ public class BiomeManager : MonoBehaviour
         {
             biomeWeights[biome]++;
         }
+
+        LogBiomeWeights();
     }
 
     public BiomeType GetRandomBiome()
